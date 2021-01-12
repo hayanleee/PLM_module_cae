@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CaeDAO">
+
+	<!-- caemp 리스트를 조회 -->
+    <select id="selectCaempSearch" resultType="java.util.HashMap">
+	    SELECT c.oid, camf.codenm field, camo.codenm open, c.title, e.user_nm as reghumid, to_char(c.regdate::TIMESTAMP, 'YYYY-MM-DD') regdate
+		  FROM caemp c
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CAMF') camf
+			ON c.field = camf.code
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CAMO') camo
+			ON c.open = camo.code
+		  LEFT JOIN lettnemplyrinfo e ON c.reghumid = e.emplyr_id
+		 WHERE 1=1
+    	<if test='field != null and !field.equals("") '>
+            AND c.field LIKE CONCAT('%', #{field}, '%')
+        </if>
+        <if test='open != null and !open.equals("") '>
+            AND c.open LIKE CONCAT('%', #{open}, '%')
+        </if>
+        <if test='title != null and !title.equals("") '>
+            AND c.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+    	<if test='regdate != null and !regdate.equals("") '>
+    		AND c.regdate BETWEEN #{regdate}::TIMESTAMP AND CAST(CONCAT(#{regdate},' 23:59:59') AS TIMESTAMP)
+    	</if>
+    	<if test='reghumid != null and !reghumid.equals("") '>
+            AND e.user_nm LIKE CONCAT('%', #{reghumid}, '%')
+        </if>
+    	order by c.regdate desc
+        <if test='iDisplayStart != null and !iDisplayStart.equals("") and iDisplayLength != null  and !iDisplayLength.equals("") ' >
+            LIMIT ${iDisplayLength} OFFSET ${iDisplayStart}
+        </if>
+    </select>
+    
+    <!-- caemp 리스트 총 갯수를 조회 -->
+    <select id="selectCaempSearchTotCnt" resultType="int">
+    	SELECT COUNT(*) AS totcnt
+		  FROM caemp c
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CAMF') camf
+			ON c.field = camf.code
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CAMO') camo
+			ON c.open = camo.code
+		  LEFT JOIN lettnemplyrinfo e ON c.reghumid = e.emplyr_id
+		 WHERE 1=1
+    	<if test='field != null and !field.equals("") '>
+            AND c.field LIKE CONCAT('%', #{field}, '%')
+        </if>
+        <if test='open != null and !open.equals("") '>
+            AND c.open LIKE CONCAT('%', #{open}, '%')
+        </if>
+        <if test='title != null and !title.equals("") '>
+            AND c.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+    	<if test='regdate != null and !regdate.equals("") '>
+    		AND c.regdate BETWEEN #{regdate}::TIMESTAMP AND CAST(CONCAT(#{regdate},' 23:59:59') AS TIMESTAMP)
+    	</if>
+    	<if test='reghumid != null and !reghumid.equals("") '>
+            AND e.user_nm LIKE CONCAT('%', #{reghumid}, '%')
+        </if>
+	</select>
+    
+    <!-- caemp 상세정보를 조회 -->
+    <select id="selectCaempSearchDetail" resultType="com.yura.cae.service.CaeVO">
+		SELECT c.oid, camf.codenm field, camo.codenm open, c.title, e.user_nm as reghumid,
+			   to_char(c.regdate::TIMESTAMP, 'YYYY-MM-DD') regdate, atchfileid
+		  FROM caemp c
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CAMF') camf
+			ON c.field = camf.code
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CAMO') camo
+			ON c.open = camo.code
+		  LEFT JOIN lettnemplyrinfo e ON c.reghumid = e.emplyr_id
+		 WHERE c.oid = #{oid}
+    </select>
+    
+    <!-- caemp 항목을 삭제 -->
+	<delete id="deleteCaempInfo">
+        DELETE FROM
+        	caemp                
+		WHERE 
+			oid = #{oid}
+	</delete>
+	
+    <!-- caemp 데이터 중복체크 -->
+    <select id="selectDupleChk" resultType="int">
+   		SELECT
+   			COUNT(*)
+		FROM 
+			caemp
+		WHERE
+			oid = #{oid}	
+	</select>
+    
+    <!-- caemp 항목을 등록 -->
+	<insert id="insertCaempInfo">
+	    INSERT INTO caemp (oid, field, open, title, reghumid, regdate, atchfileid)
+    	VALUES (#{oid}, #{field}, #{open}, #{title}, #{reghumid}, now(), #{atchfileid})
+	</insert>
+    
+    <!-- caemp 항목을 수정 -->
+	<update id="updateCaempInfo">
+        UPDATE caemp
+   		   SET field = #{field}, open = #{open}, title = #{title}, moduserid = #{reghumid}, moddate = now(), atchfileid = #{atchfileid}
+		 WHERE oid = #{oid}
+	</update>
+    
+    <!-- caedb 리스트를 조회 -->
+    <select id="selectCaedbSearch" resultType="java.util.HashMap">
+	    SELECT c.oid, cadp.codenm part, car.name comCtgOid, cadd.codenm division, cadf.codenm field, c.param, c.title, cada.codenm apply, 
+	    		c.dno, e.user_nm as reghumid, to_char(c.regdate::TIMESTAMP, 'YYYY-MM-DD') regdate
+		  FROM caedb c
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CADP') cadp
+			ON c.part = cadp.code
+		  LEFT JOIN engctgview car 
+			ON c.comCtgOid = car.oid
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CADD') cadd
+			ON c.division = cadd.code
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CADF') cadf
+			ON c.field = cadf.code
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CADA') cada
+			ON c.apply = cada.code
+		  LEFT JOIN lettnemplyrinfo e 
+		 	ON c.reghumid = e.emplyr_id
+		 WHERE 1=1
+    	<if test='part != null and !part.equals("") '>
+            AND c.part LIKE CONCAT('%', #{part}, '%')
+        </if>
+        <if test='comCtgOid != null and !comCtgOid.equals("") '>
+            AND c.comCtgOid LIKE CONCAT('%', #{comCtgOid}, '%')
+        </if>
+        <if test='division != null and !division.equals("") '>
+            AND c.division LIKE CONCAT('%', #{division}, '%')
+        </if>
+        <if test='field != null and !field.equals("") '>
+            AND c.field LIKE CONCAT('%', #{field}, '%')
+        </if>
+        <if test='param != null and !param.equals("") '>
+            AND c.param LIKE CONCAT('%', #{param}, '%')
+        </if>
+        <if test='title != null and !title.equals("") '>
+            AND c.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test='apply != null and !apply.equals("") '>
+            AND c.apply LIKE CONCAT('%', #{apply}, '%')
+        </if>
+    	<if test='regdate != null and !regdate.equals("") '>
+    		AND c.regdate BETWEEN #{regdate}::TIMESTAMP AND CAST(CONCAT(#{regdate},' 23:59:59') AS TIMESTAMP)
+    	</if>
+    	<if test='reghumid != null and !reghumid.equals("") '>
+            AND e.user_nm LIKE CONCAT('%', #{reghumid}, '%')
+        </if>
+    	order by c.regdate desc
+        <if test='iDisplayStart != null and !iDisplayStart.equals("") and iDisplayLength != null  and !iDisplayLength.equals("") ' >
+            LIMIT ${iDisplayLength} OFFSET ${iDisplayStart}
+        </if>
+    </select>
+    
+    <!-- caedb 리스트 총 갯수를 조회 -->
+    <select id="selectCaedbSearchTotCnt" resultType="int">
+    	SELECT COUNT(*) AS totcnt
+		  FROM caedb c
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CADP') cadp
+			ON c.part = cadp.code
+		  LEFT JOIN engctgview car 
+			ON c.comCtgOid = car.oid
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CADD') cadd
+			ON c.division = cadd.code
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CADF') cadf
+			ON c.field = cadf.code
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CADA') cada
+			ON c.apply = cada.code
+		  LEFT JOIN lettnemplyrinfo e 
+		 	ON c.reghumid = e.emplyr_id
+		 WHERE 1=1
+    	<if test='part != null and !part.equals("") '>
+            AND c.part LIKE CONCAT('%', #{part}, '%')
+        </if>
+        <if test='comCtgOid != null and !comCtgOid.equals("") '>
+            AND c.comCtgOid LIKE CONCAT('%', #{comCtgOid}, '%')
+        </if>
+        <if test='division != null and !division.equals("") '>
+            AND c.division LIKE CONCAT('%', #{division}, '%')
+        </if>
+        <if test='field != null and !field.equals("") '>
+            AND c.field LIKE CONCAT('%', #{field}, '%')
+        </if>
+        <if test='param != null and !param.equals("") '>
+            AND c.param LIKE CONCAT('%', #{param}, '%')
+        </if>
+        <if test='title != null and !title.equals("") '>
+            AND c.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test='apply != null and !apply.equals("") '>
+            AND c.apply LIKE CONCAT('%', #{apply}, '%')
+        </if>
+    	<if test='regdate != null and !regdate.equals("") '>
+    		AND c.regdate BETWEEN #{regdate}::TIMESTAMP AND CAST(CONCAT(#{regdate},' 23:59:59') AS TIMESTAMP)
+    	</if>
+    	<if test='reghumid != null and !reghumid.equals("") '>
+            AND e.user_nm LIKE CONCAT('%', #{reghumid}, '%')
+        </if>
+	</select>
+    
+    <!-- caedb 상세정보를 조회 -->
+    <select id="selectCaedbSearchDetail" resultType="com.yura.cae.service.CaeVO">
+		SELECT c.oid, cadp.codenm part, car.oid comCtgOid, car.name comCtgTxt, cadd.codenm division, cadf.codenm field, c.param, c.title, cada.codenm apply, 
+				c.dno, e.user_nm as reghumid, to_char(c.regdate::TIMESTAMP, 'YYYY-MM-DD') regdate, atchfileid
+		  FROM caedb c
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CADP') cadp
+			ON c.part = cadp.code
+		  LEFT JOIN engctgview car 
+			ON c.comCtgOid = car.oid
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CADD') cadd
+			ON c.division = cadd.code
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CADF') cadf
+			ON c.field = cadf.code
+		  LEFT JOIN (select code, code_nm codenm from lettccmmndetailcode where use_at='Y' and code_id='CADA') cada
+			ON c.apply = cada.code
+		  LEFT JOIN lettnemplyrinfo e 
+		 	ON c.reghumid = e.emplyr_id
+		 WHERE c.oid = #{oid}
+    </select>
+    
+    <!-- caedb 항목을 삭제 -->
+	<delete id="deleteCaedbInfo">
+        DELETE FROM
+        	caedb              
+		WHERE 
+			oid = #{oid}
+	</delete>
+    
+    <!-- caedb 항목을 등록 -->
+	<insert id="insertCaedbInfo">
+	    INSERT INTO caedb (oid, part, comCtgOid, division, field, apply, param, title, dno, reghumid, regdate, atchfileid)
+    	VALUES (#{oid}, #{part}, #{comCtgOid}, #{division}, #{field}, #{apply}, #{param}, #{title}, #{dno}, #{reghumid}, now(), #{atchfileid})
+	</insert>
+    
+    <!-- caedb 항목을 수정 -->
+	<update id="updateCaedbInfo">
+        UPDATE caedb
+   		   SET part = #{part}, comCtgOid = #{comCtgOid}, division = #{division}, field = #{field}, apply = #{apply}, param = #{param}, 
+   		   	   title = #{title}, dno = #{dno}, moduserid = #{reghumid}, moddate = now(), atchfileid = #{atchfileid}
+		 WHERE oid = #{oid}
+	</update>
+    
+ </mapper>
